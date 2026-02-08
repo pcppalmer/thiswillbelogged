@@ -21,11 +21,11 @@ function Home() {
     })();
   }, []);
 
-  const canSubmit = useMemo(() => note.trim().length > 0 && !loading, [note, loading]);
-
   async function submit() {
+    if (!note.trim()) return;
     setLoading(true);
     setStatus(null);
+
     try {
       const res = await fetch("/api/submit", {
         method: "POST",
@@ -46,104 +46,105 @@ function Home() {
   }
 
   return (
-    <main style={{ maxWidth: 680, margin: "64px auto", padding: "0 16px", fontFamily: "system-ui, sans-serif" }}>
-      <h1 style={{ fontSize: 40, marginBottom: 8 }}>This will be logged.</h1>
-      <p style={{ marginTop: 0, opacity: 0.85 }}>
-        You may submit up to <b>3</b> entries per day.
-      </p>
+    <div style={{ margin: "40px auto", width: 520 }}>
+      <div className="window">
+        <div className="title-bar">
+          <div className="title-bar-text">This will be logged</div>
+          <div className="title-bar-controls">
+            <button aria-label="Minimize" />
+            <button aria-label="Maximize" />
+            <button aria-label="Close" />
+          </div>
+        </div>
 
-      <div style={{ margin: "24px 0", padding: 16, border: "1px solid #222", borderRadius: 12 }}>
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          rows={7}
-          placeholder="Type here…"
-          style={{ width: "100%", fontSize: 16, padding: 12, borderRadius: 10, border: "1px solid #444" }}
-        />
-        <button
-          onClick={submit}
-          disabled={!canSubmit}
-          style={{
-            marginTop: 12,
-            padding: "10px 14px",
-            borderRadius: 10,
-            border: "1px solid #444",
-            cursor: canSubmit ? "pointer" : "not-allowed",
-          }}
-        >
-          {loading ? "Logging…" : "Submit"}
-        </button>
-      </div>
+        <div className="window-body">
+          <p>You may submit up to 3 entries per day.</p>
 
-      {status && (
-        <div style={{ padding: 16, border: "1px solid #444", borderRadius: 12 }}>
-          {status.ok ? (
-            <>
-              <div style={{ fontSize: 18, marginBottom: 6 }}>
-                <b>{status.message}</b>
-              </div>
-              <div style={{ opacity: 0.85 }}>
-                Reference: <b>{status.ref}</b>
-              </div>
-              <div style={{ opacity: 0.85 }}>
-                Receipt: <Link to={status.receiptUrl}>{status.receiptUrl}</Link>
-              </div>
-              <div style={{ marginTop: 8, opacity: 0.85 }}>
-                Remaining today: <b>{status.remainingToday}</b>
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: 18, marginBottom: 6 }}>
-                <b>Request rejected.</b>
-              </div>
-              <div style={{ opacity: 0.85 }}>{status.error}</div>
-              {typeof status.remainingToday === "number" && (
-                <div style={{ marginTop: 8, opacity: 0.85 }}>
-                  Remaining today: <b>{status.remainingToday}</b>
-                </div>
+          <label htmlFor="entry">Entry</label>
+          <textarea
+            id="entry"
+            rows={6}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Type here…"
+            style={{ width: "100%" }}
+          />
+
+          <div style={{ marginTop: 12 }}>
+            <button onClick={submit} disabled={loading}>
+              {loading ? "Logging…" : "Submit"}
+            </button>
+          </div>
+
+          {status && (
+            <div style={{ marginTop: 12 }}>
+              {status.ok ? (
+                <>
+                  <p><strong>{status.message}</strong></p>
+                  <p>
+                    Reference:{" "}
+                    <span style={{ fontFamily: "monospace" }}>
+                      {status.ref}
+                    </span>
+                  </p>
+                  <p>
+                    Receipt:{" "}
+                    <Link to={status.receiptUrl}>
+                      {status.receiptUrl}
+                    </Link>
+                  </p>
+                </>
+              ) : (
+                <p><strong>{status.error}</strong></p>
               )}
-            </>
+            </div>
           )}
         </div>
-      )}
 
-      <div style={{ marginTop: 24, opacity: 0.8 }}>
-         <b>{counter ?? "…"}</b> entries noted.
+        <div className="status-bar">
+          <p className="status-bar-field">
+            System total: {counter ?? "…"} entries.
+          </p>
+          <p className="status-bar-field">
+            No further action is required.
+          </p>
+        </div>
       </div>
-
-      <footer style={{ marginTop: 48, opacity: 0.6, fontSize: 13 }}>
-        Stores metadata only (reference + timestamp + daily count).
-      </footer>
-    </main>
+    </div>
   );
 }
+
 async function sha256HexClient(input: string): Promise<string> {
   const bytes = new TextEncoder().encode(input);
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+
 function Receipt() {
   const { ref } = useParams();
   const [data, setData] = useState<any>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  // verification UI state
+  // Verify UI
   const [verifyText, setVerifyText] = useState("");
-  const [verifyStatus, setVerifyStatus] = useState<"idle" | "match" | "mismatch" | "checking">("idle");
+  const [verifyStatus, setVerifyStatus] = useState<"idle" | "checking" | "match" | "mismatch">("idle");
 
   useEffect(() => {
     (async () => {
       setErr(null);
       setData(null);
-      setVerifyStatus("idle");
       setVerifyText("");
+      setVerifyStatus("idle");
 
-      const res = await fetch(`/api/receipt/${encodeURIComponent(ref || "")}`);
-      const j = await res.json();
-      if (!j.ok) setErr(j.error || "Receipt not found.");
-      else setData(j);
+      try {
+        const res = await fetch(`/api/receipt/${encodeURIComponent(ref || "")}`);
+        const j = await res.json();
+        if (!j.ok) setErr(j.error || "Receipt not found.");
+        else setData(j);
+      } catch {
+        setErr("Network error.");
+      }
     })();
   }, [ref]);
 
@@ -154,91 +155,118 @@ function Receipt() {
     const local = (verifyText || "").trim();
     const hash = await sha256HexClient(local);
 
-    if (hash === data.fingerprint) setVerifyStatus("match");
+    if (hash === String(data.fingerprint)) setVerifyStatus("match");
     else setVerifyStatus("mismatch");
   }
 
+  const title = `Receipt${ref ? ` — ${String(ref).toUpperCase()}` : ""}`;
+
   return (
-    <main style={{ maxWidth: 680, margin: "64px auto", padding: "0 16px", fontFamily: "system-ui, sans-serif" }}>
-      <h1 style={{ fontSize: 34, marginBottom: 8 }}>Receipt</h1>
-      <p style={{ marginTop: 0, opacity: 0.85 }}>
-        <Link to="/">← Back</Link>
-      </p>
-      <p style={{ marginTop: 0, opacity: 0.75 }}>
-      Retain this reference for your records. Do not share your receipt.
-      </p>
-
-      {err && (
-        <div style={{ padding: 16, border: "1px solid #444", borderRadius: 12 }}>
-          <b>{err}</b>
+    <div style={{ margin: "40px auto", width: 520 }}>
+      <div className="window">
+        <div className="title-bar">
+          <div className="title-bar-text">{title}</div>
+          <div className="title-bar-controls">
+            <button aria-label="Minimize" />
+            <button aria-label="Maximize" />
+            <button aria-label="Close" />
+          </div>
         </div>
-      )}
 
-      {data && (
-        <>
-          <div style={{ padding: 16, border: "1px solid #444", borderRadius: 12, marginBottom: 16 }}>
-            <div style={{ fontSize: 18, marginBottom: 6 }}>
-              <b>{data.message}</b>
-            </div>
-            <div style={{ opacity: 0.85 }}>
-              Reference: <b>{data.ref}</b>
-            </div>
-            <div style={{ opacity: 0.85 }}>
-              Timestamp: <b>{data.timestamp}</b>
-            </div>
-            <div style={{ opacity: 0.85 }}>
-              Fingerprint: <b>{String(data.fingerprint).slice(0, 16)}</b>
-              <span style={{ opacity: 0.6 }}>…</span>
-            </div>
-          </div>
+        <div className="window-body">
+          <p style={{ marginTop: 0 }}>
+            <Link to="/">← Back</Link>
+          </p>
 
-          <div style={{ padding: 16, border: "1px solid #222", borderRadius: 12 }}>
-            <div style={{ marginBottom: 8 }}>
-              <b>Verify</b> (optional)
+          <p>
+            Retain this reference for your records. Do not share this receipt.
+          </p>
+
+          {err && (
+            <div className="dialog-box" style={{ marginTop: 12 }}>
+              <p><strong>{err}</strong></p>
             </div>
-            <div style={{ opacity: 0.8, marginBottom: 10 }}>
-              Paste the original entry to verify it matches this receipt. This check happens in your browser.
-            </div>
+          )}
 
-            <textarea
-              value={verifyText}
-              onChange={(e) => setVerifyText(e.target.value)}
-              rows={5}
-              placeholder="Paste the original entry here…"
-              style={{ width: "100%", fontSize: 16, padding: 12, borderRadius: 10, border: "1px solid #444" }}
-            />
+          {data && (
+            <>
+              <fieldset style={{ marginTop: 12 }}>
+                <legend>Record</legend>
 
-            <button
-              onClick={verify}
-              disabled={!verifyText.trim() || verifyStatus === "checking"}
-              style={{
-                marginTop: 12,
-                padding: "10px 14px",
-                borderRadius: 10,
-                border: "1px solid #444",
-                cursor: verifyText.trim() ? "pointer" : "not-allowed",
-              }}
-            >
-              {verifyStatus === "checking" ? "Verifying…" : "Verify"}
-            </button>
+                <div style={{ marginBottom: 8 }}>
+                  <strong>{data.message}</strong>
+                </div>
 
-            {verifyStatus === "match" && (
-              <div style={{ marginTop: 12, padding: 12, borderRadius: 10, border: "1px solid #2b2" }}>
-                <b>Match.</b> This entry corresponds to the receipt.
-              </div>
-            )}
+                <div style={{ marginBottom: 6 }}>
+                  Reference:{" "}
+                  <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
+                    {data.ref}
+                  </span>
+                </div>
 
-            {verifyStatus === "mismatch" && (
-              <div style={{ marginTop: 12, padding: 12, borderRadius: 10, border: "1px solid #b22" }}>
-                <b>No match.</b> This entry does not correspond to the receipt.
-              </div>
-            )}
-          </div>
-        </>
-      )}
-    </main>
+                <div style={{ marginBottom: 6 }}>
+                  Timestamp:{" "}
+                  <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
+                    {data.timestamp}
+                  </span>
+                </div>
+
+                <div style={{ marginBottom: 6 }}>
+                  Fingerprint:{" "}
+                  <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
+                    {String(data.fingerprint).slice(0, 16)}…
+                  </span>
+                </div>
+              </fieldset>
+
+              <fieldset style={{ marginTop: 12 }}>
+                <legend>Verify (optional)</legend>
+
+                <p style={{ marginTop: 0 }}>
+                  Paste the original entry to verify it matches this receipt.
+                </p>
+
+                <label htmlFor="verify">Original entry</label>
+                <textarea
+                  id="verify"
+                  rows={5}
+                  value={verifyText}
+                  onChange={(e) => setVerifyText(e.target.value)}
+                  placeholder="Paste the original entry here…"
+                  style={{ width: "100%" }}
+                />
+
+                <div style={{ marginTop: 10 }}>
+                  <button onClick={verify} disabled={!verifyText.trim() || verifyStatus === "checking"}>
+                    {verifyStatus === "checking" ? "Verifying…" : "Verify"}
+                  </button>
+                </div>
+
+                {verifyStatus === "match" && (
+                  <p style={{ marginTop: 10 }}>
+                    <strong>Match.</strong> This entry corresponds to the receipt.
+                  </p>
+                )}
+
+                {verifyStatus === "mismatch" && (
+                  <p style={{ marginTop: 10 }}>
+                    <strong>No match.</strong> This entry does not correspond to the receipt.
+                  </p>
+                )}
+              </fieldset>
+            </>
+          )}
+        </div>
+
+        <div className="status-bar">
+          <p className="status-bar-field">Retain this reference for your records.</p>
+          <p className="status-bar-field">No further action is required.</p>
+        </div>
+      </div>
+    </div>
   );
 }
+
 
 
 export default function App() {
