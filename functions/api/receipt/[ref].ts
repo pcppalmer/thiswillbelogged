@@ -9,10 +9,9 @@ export async function onRequestGet({ params, env }: { params: { ref: string }; e
   const data = JSON.parse(raw) as { ts: string; ack: string; fingerprint: string };
 
   return json({
-    ok: true,
-    ref,
-    timestamp: data.ts,
-    message: data.ack,
-    fingerprint: data.fingerprint.slice(0, 16), // partial fingerprint for vibe
-  });
-}
+  ok: true,
+  ref,
+  timestamp: data.ts,
+  message: data.ack,
+  fingerprint: data.fingerprint, // full fingerprint for verification
+});}

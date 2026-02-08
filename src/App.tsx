@@ -118,20 +118,45 @@ function Home() {
     </main>
   );
 }
+async function sha256HexClient(input: string): Promise<string> {
+  const bytes = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 function Receipt() {
   const { ref } = useParams();
   const [data, setData] = useState<any>(null);
   const [err, setErr] = useState<string | null>(null);
 
+  // verification UI state
+  const [verifyText, setVerifyText] = useState("");
+  const [verifyStatus, setVerifyStatus] = useState<"idle" | "match" | "mismatch" | "checking">("idle");
+
   useEffect(() => {
     (async () => {
+      setErr(null);
+      setData(null);
+      setVerifyStatus("idle");
+      setVerifyText("");
+
       const res = await fetch(`/api/receipt/${encodeURIComponent(ref || "")}`);
       const j = await res.json();
       if (!j.ok) setErr(j.error || "Receipt not found.");
       else setData(j);
     })();
   }, [ref]);
+
+  async function verify() {
+    if (!data?.fingerprint) return;
+    setVerifyStatus("checking");
+
+    const local = (verifyText || "").trim();
+    const hash = await sha256HexClient(local);
+
+    if (hash === data.fingerprint) setVerifyStatus("match");
+    else setVerifyStatus("mismatch");
+  }
 
   return (
     <main style={{ maxWidth: 680, margin: "64px auto", padding: "0 16px", fontFamily: "system-ui, sans-serif" }}>
@@ -140,27 +165,78 @@ function Receipt() {
         <Link to="/">← Back</Link>
       </p>
 
-      {err && <div style={{ padding: 16, border: "1px solid #444", borderRadius: 12 }}><b>{err}</b></div>}
+      {err && (
+        <div style={{ padding: 16, border: "1px solid #444", borderRadius: 12 }}>
+          <b>{err}</b>
+        </div>
+      )}
 
       {data && (
-        <div style={{ padding: 16, border: "1px solid #444", borderRadius: 12 }}>
-          <div style={{ fontSize: 18, marginBottom: 6 }}>
-            <b>{data.message}</b>
+        <>
+          <div style={{ padding: 16, border: "1px solid #444", borderRadius: 12, marginBottom: 16 }}>
+            <div style={{ fontSize: 18, marginBottom: 6 }}>
+              <b>{data.message}</b>
+            </div>
+            <div style={{ opacity: 0.85 }}>
+              Reference: <b>{data.ref}</b>
+            </div>
+            <div style={{ opacity: 0.85 }}>
+              Timestamp: <b>{data.timestamp}</b>
+            </div>
+            <div style={{ opacity: 0.85 }}>
+              Fingerprint: <b>{String(data.fingerprint).slice(0, 16)}</b>
+              <span style={{ opacity: 0.6 }}>…</span>
+            </div>
           </div>
-          <div style={{ opacity: 0.85 }}>
-            Reference: <b>{data.ref}</b>
+
+          <div style={{ padding: 16, border: "1px solid #222", borderRadius: 12 }}>
+            <div style={{ marginBottom: 8 }}>
+              <b>Verify</b> (optional)
+            </div>
+            <div style={{ opacity: 0.8, marginBottom: 10 }}>
+              Paste the original entry to verify it matches this receipt. This check happens in your browser.
+            </div>
+
+            <textarea
+              value={verifyText}
+              onChange={(e) => setVerifyText(e.target.value)}
+              rows={5}
+              placeholder="Paste the original entry here…"
+              style={{ width: "100%", fontSize: 16, padding: 12, borderRadius: 10, border: "1px solid #444" }}
+            />
+
+            <button
+              onClick={verify}
+              disabled={!verifyText.trim() || verifyStatus === "checking"}
+              style={{
+                marginTop: 12,
+                padding: "10px 14px",
+                borderRadius: 10,
+                border: "1px solid #444",
+                cursor: verifyText.trim() ? "pointer" : "not-allowed",
+              }}
+            >
+              {verifyStatus === "checking" ? "Verifying…" : "Verify"}
+            </button>
+
+            {verifyStatus === "match" && (
+              <div style={{ marginTop: 12, padding: 12, borderRadius: 10, border: "1px solid #2b2" }}>
+                <b>Match.</b> This entry corresponds to the receipt.
+              </div>
+            )}
+
+            {verifyStatus === "mismatch" && (
+              <div style={{ marginTop: 12, padding: 12, borderRadius: 10, border: "1px solid #b22" }}>
+                <b>No match.</b> This entry does not correspond to the receipt.
+              </div>
+            )}
           </div>
-          <div style={{ opacity: 0.85 }}>
-            Timestamp: <b>{data.timestamp}</b>
-          </div>
-          <div style={{ opacity: 0.85 }}>
-            Fingerprint: <b>{data.fingerprint}</b>
-          </div>
-        </div>
+        </>
       )}
     </main>
   );
 }
+
 
 export default function App() {
   return (

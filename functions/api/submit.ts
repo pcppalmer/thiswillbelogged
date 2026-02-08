@@ -36,7 +36,7 @@ export async function onRequestPost({ request, env }: { request: Request; env: E
   const ack = ACKS[Math.floor(Math.random() * ACKS.length)];
 
   // Fingerprint note so the receipt feels “real” without storing content
-  const fingerprint = await sha256Hex(`note:${note}:${env.IP_SALT}`);
+  const fingerprint = await sha256Hex(note);
 
   // Store receipt metadata only
   await env.LOG_KV.put(`receipt:${ref}`, JSON.stringify({ ts, ack, fingerprint }));
