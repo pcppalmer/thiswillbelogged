@@ -46,7 +46,7 @@ function Home() {
   }
 
   return (
-    <div style={{ margin: "40px auto", width: 520 }}>
+    <div style={{ margin: "24px auto", maxWidth: 520, width: "calc(100% - 24px)" }}>
       <div className="window">
         <div className="title-bar">
           <div className="title-bar-text">This will be logged</div>
@@ -162,7 +162,7 @@ function Receipt() {
   const title = `Receipt${ref ? ` — ${String(ref).toUpperCase()}` : ""}`;
 
   return (
-    <div style={{ margin: "40px auto", width: 520 }}>
+    <div style={{ margin: "24px auto", maxWidth: 520, width: "calc(100% - 24px)" }}>
       <div className="window">
         <div className="title-bar">
           <div className="title-bar-text">{title}</div>
