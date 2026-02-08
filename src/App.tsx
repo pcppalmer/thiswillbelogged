@@ -49,7 +49,7 @@ function Home() {
     <div style={{ margin: "24px auto", maxWidth: 520, width: "calc(100% - 24px)" }}>
       <div className="window">
         <div className="title-bar">
-          <div className="title-bar-text">This will be logged</div>
+          <div className="title-bar-text">This Will Be Logged</div>
           <div className="title-bar-controls">
             <button aria-label="Minimize" />
             <button aria-label="Maximize" />
@@ -58,7 +58,10 @@ function Home() {
         </div>
 
         <div className="window-body">
-          <p>You may submit up to 3 entries per day.</p>
+          <p>This system records entries for reference purposes only.
+Submitted content is not retained.</p>
+    <p>Enter text below and submit to generate a reference.
+You may submit up to three (3) entries per day.</p>
 
           <label htmlFor="entry">Entry</label>
           <textarea
@@ -66,7 +69,7 @@ function Home() {
             rows={6}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Type here…"
+            placeholder="Type here..."
             style={{ width: "100%" }}
           />
 
