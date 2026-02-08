@@ -40,12 +40,14 @@ export function todayNY(): string {
 }
 
 export const ACKS = [
-  "Acknowledged.",
-  "Noted.",
-  "Recorded.",
-  "Logged.",
-  "Receipt generated.",
   "Entry accepted.",
-  "Submission captured.",
+  "Entry received.",
   "Reference issued.",
+  "Submission recorded.",
+  "Submission logged.",
+  "Acknowledged.",
+  "Noted for record.",
+  "No further action is required.",
+  "You may now close this window.",
+  "This has been noted for quality purposes.",
 ] as const;

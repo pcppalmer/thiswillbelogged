@@ -109,11 +109,11 @@ function Home() {
       )}
 
       <div style={{ marginTop: 24, opacity: 0.8 }}>
-        Public counter: <b>{counter ?? "…"}</b> entries noted.
+         <b>{counter ?? "…"}</b> entries noted.
       </div>
 
       <footer style={{ marginTop: 48, opacity: 0.6, fontSize: 13 }}>
-        Stores metadata only (reference + timestamp + daily count). Does not store your text.
+        Stores metadata only (reference + timestamp + daily count).
       </footer>
     </main>
   );
@@ -163,6 +163,9 @@ function Receipt() {
       <h1 style={{ fontSize: 34, marginBottom: 8 }}>Receipt</h1>
       <p style={{ marginTop: 0, opacity: 0.85 }}>
         <Link to="/">← Back</Link>
+      </p>
+      <p style={{ marginTop: 0, opacity: 0.75 }}>
+      Retain this reference for your records. Do not share your receipt.
       </p>
 
       {err && (
